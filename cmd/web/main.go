@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -77,7 +78,7 @@ func main() {
 	}}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", h.auth(h.handleHome))
+	mux.HandleFunc("/", h.handleHome)
 	mux.HandleFunc("/login", h.HandleLogin)
 	mux.HandleFunc("/oauth-google-redirect", h.HandleRedirect)
 
@@ -99,8 +100,11 @@ func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
 		serveFile("static/html/preauth.html")
 		return
 	}
-	// TODO: template html (insert id or email somewhere on the page)
+	// TODO: proper html template (insert id or email somewhere on the page
+	// to signal to the user that they are authenticated)
 	w.Write(id)
+	fmt.Fprintln(w, "<br>")
+	fmt.Fprintln(w, `<a href="/invite">invite</a>`)
 }
 
 func (h *handler) handleStatic(w http.ResponseWriter, r *http.Request) {
