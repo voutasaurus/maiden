@@ -98,6 +98,7 @@ func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) handleStatic(w http.ResponseWriter, r *http.Request) {
+	h.Log.Printf("serving: %v", r.URL.Path)
 	http.ServeFile(w, r, r.URL.Path)
 }
 
