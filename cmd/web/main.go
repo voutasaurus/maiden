@@ -2,15 +2,16 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/voutasaurus/env"
-	"github.com/voutasaurus/oauth"
-
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+
+	"github.com/voutasaurus/env"
+	"github.com/voutasaurus/oauth"
 )
 
 var errNotAllowed = errors.New("email not allowed")
@@ -77,9 +78,12 @@ func main() {
 	}}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", h.handleHome)
+	mux.HandleFunc("/", h.auth(h.handleHome))
 	mux.HandleFunc("/login", h.HandleLogin)
 	mux.HandleFunc("/oauth-google-redirect", h.HandleRedirect)
+
+	mux.HandleFunc("/static/", h.auth(h.handleStatic))
+	mux.HandleFunc("/invite", redirect("/static/html/invite.html"))
 
 	logger.Println("serving on ", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
@@ -90,10 +94,33 @@ type handler struct {
 }
 
 func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
-	id, err := h.Cookie(r)
-	if err != nil {
-		http.Error(w, err.Error(), 401)
-		return
+	fmt.Fprint(w, id(r))
+}
+
+func (h *handler) handleStatic(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, r.URL.Path)
+}
+
+const authHeaderKey = "X-AuthID"
+
+func (h *handler) auth(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := h.Cookie(r)
+		if err != nil {
+			http.Error(w, err.Error(), 401)
+			return
+		}
+		r.Header.Add(authHeaderKey, string(id))
+		fn(w, r)
 	}
-	w.Write(id)
+}
+
+func id(r *http.Request) string {
+	return r.Header.Get(authHeaderKey)
+}
+
+func redirect(url string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, url, 302)
+	}
 }

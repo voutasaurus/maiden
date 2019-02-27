@@ -4,8 +4,6 @@ github.com/golang/protobuf v1.2.0 h1:P3YflyNX/ehuJFLhxviNdFxQPkGK5cDcApsge1SqnvM
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/voutasaurus/env v0.1.0 h1:4Jtj2o5O2heoL1bHcK+GGj6TM3/0fKK5Siw53yH30/0=
 github.com/voutasaurus/env v0.1.0/go.mod h1:Ucv7Z6/KS4W0IfkN0YIBZMCM1QQibciH9Yo+zH8ptk4=
-github.com/voutasaurus/oauth v0.0.0-20181229073404-fe85cf355555 h1:0AkvSGaw38tMkahGUvS1yvNzQTjLX5SL1JYfNyqBEEY=
-github.com/voutasaurus/oauth v0.0.0-20181229073404-fe85cf355555/go.mod h1:kOVDQ8Eo3T+pmN8PyrBs3toE2YQQlVjNB1MQuIw7QNc=
 github.com/voutasaurus/oauth v0.0.0-20190227040719-fe28476ace2c h1:q/ep5tlo+jyLkw5RmbXDEE6aD3Rdhnl39AwS7rIbLto=
 github.com/voutasaurus/oauth v0.0.0-20190227040719-fe28476ace2c/go.mod h1:kOVDQ8Eo3T+pmN8PyrBs3toE2YQQlVjNB1MQuIw7QNc=
 golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9 h1:mKdxBk7AujPs8kU4m80U72y/zjbZ3UcXC7dClwKbUI0=
