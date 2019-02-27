@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -20,8 +19,6 @@ var errNotAllowed = errors.New("email not allowed")
 func main() {
 	logger := log.New(os.Stderr, "oauthtest: ", log.Llongfile|log.LstdFlags|log.LUTC)
 	logger.Println("starting...")
-
-	debugLogFiles(logger)
 
 	fatal := func(key string) {
 		logger.Fatalf("expected environment variable %q to be set", key)
@@ -101,7 +98,6 @@ func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) handleStatic(w http.ResponseWriter, r *http.Request) {
-	h.Log.Printf("serving: %v", r.URL.Path)
 	http.ServeFile(w, r, r.URL.Path[1:])
 }
 
@@ -126,16 +122,5 @@ func id(r *http.Request) string {
 func redirect(url string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, url, 302)
-	}
-}
-
-func debugLogFiles(lg *log.Logger) {
-	files, err := ioutil.ReadDir("./")
-	if err != nil {
-		lg.Fatal(err)
-	}
-
-	for _, f := range files {
-		lg.Printf("found file: %v", f.Name())
 	}
 }
