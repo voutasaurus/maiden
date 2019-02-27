@@ -17,7 +17,7 @@ import (
 var errNotAllowed = errors.New("email not allowed")
 
 func main() {
-	logger := log.New(os.Stderr, "oauthtest: ", log.Llongfile|log.LstdFlags|log.LUTC)
+	logger := log.New(os.Stderr, "maiden: ", log.Llongfile|log.LstdFlags|log.LUTC)
 	logger.Println("starting...")
 
 	fatal := func(key string) {
@@ -136,7 +136,7 @@ func (h *handler) handleEmailPost(w http.ResponseWriter, r *http.Request) {
 	if err := h.invite(email); err != nil {
 		http.Error(w, "error inviting email", 500)
 	}
-	http.ServeFile(w, r, "/static/html/invited.html")
+	http.ServeFile(w, r, "static/html/invited.html")
 }
 
 func validEmail(e string) bool {
