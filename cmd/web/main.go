@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+var errNotAllowed = errors.New("email not allowed")
+
 func main() {
 	logger := log.New(os.Stderr, "oauthtest: ", log.Llongfile|log.LstdFlags|log.LUTC)
 	logger.Println("starting...")
@@ -21,6 +24,15 @@ func main() {
 	}
 
 	addr := ":" + env.Get("PORT").WithDefault("8080")
+	allowedList := env.Get("ACL").List(",")
+	allowed := func(email string) bool {
+		for _, e := range allowedList {
+			if email == e {
+				return true
+			}
+		}
+		return false
+	}
 
 	// TODO: use public / private key pairs and register them via shared
 	// config so that multiple oauth backends can take redirects with each
@@ -49,6 +61,13 @@ func main() {
 		// Note: every domain should have a different key. Otherwise it
 		// can be copied and used across domains.
 		CookieKey: stateKey,
+
+		ACL: func(p *oauth.Profile) error {
+			if !allowed(p.Email) {
+				return errNotAllowed
+			}
+			return nil
+		},
 
 		Domain:     env.Get("DOMAIN").Required(fatal),
 		CookieName: "session",
