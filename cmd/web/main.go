@@ -97,11 +97,9 @@ type handler struct {
 func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
 	id, err := h.Cookie(r)
 	if err != nil {
-		h.Log.Println("serving preauth home page")
-		serveFile("static/html/preauth.html")
+		http.ServeFile(w, r, "static/html/preauth.html")
 		return
 	}
-	h.Log.Println("serving auth home page")
 	// TODO: proper html template (insert id or email somewhere on the page
 	// to signal to the user that they are authenticated)
 	w.Write(id)
