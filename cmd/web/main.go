@@ -84,6 +84,7 @@ func main() {
 
 	mux.HandleFunc("/static/", h.auth(h.handleStatic))
 	mux.HandleFunc("/invite", redirect("/static/html/invite.html"))
+	mux.HandleFunc("/email-invite", h.auth(h.handleEmailPost))
 
 	logger.Println("serving on ", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
@@ -123,4 +124,31 @@ func redirect(url string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, url, 302)
 	}
+}
+
+func (h *handler) handleEmailPost(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	email := r.Form.Get("email")
+	if !validEmail(email) {
+		http.Error(w, "invalid email address", 400)
+		return
+	}
+	if err := h.invite(email); err != nil {
+		http.Error(w, "error inviting email", 500)
+	}
+}
+
+func validEmail(e string) bool {
+	// TODO: check email address
+	// TODO: also do basic validation client side in JS
+	return true
+}
+
+func (h *handler) invite(email string) error {
+	h.Log.Println("inviting email:", email)
+	// TODO: generate temporary token
+	// TODO: generate link
+	// TODO: send email
+	// TODO: verified email
+	return nil
 }
