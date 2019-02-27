@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -83,8 +82,8 @@ func main() {
 	mux.HandleFunc("/oauth-google-redirect", h.HandleRedirect)
 
 	mux.HandleFunc("/static/", h.auth(h.handleStatic))
-	mux.HandleFunc("/invite", redirect("/static/html/invite.html"))
-	mux.HandleFunc("/email-invite", h.auth(h.handleEmailPost))
+	mux.HandleFunc("/invite", h.auth(serveFile("static/html/invite.html")))
+	mux.HandleFunc("/invited", h.auth(h.handleEmailPost))
 
 	logger.Println("serving on ", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
@@ -95,7 +94,13 @@ type handler struct {
 }
 
 func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, id(r))
+	id, err := h.Cookie(r)
+	if err != nil {
+		serveFile("static/html/preauth.html")
+		return
+	}
+	// TODO: template html (insert id or email somewhere on the page)
+	w.Write(id)
 }
 
 func (h *handler) handleStatic(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +128,12 @@ func id(r *http.Request) string {
 func redirect(url string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, url, 302)
+	}
+}
+
+func serveFile(filename string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filename)
 	}
 }
 
