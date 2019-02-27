@@ -136,6 +136,7 @@ func (h *handler) handleEmailPost(w http.ResponseWriter, r *http.Request) {
 	if err := h.invite(email); err != nil {
 		http.Error(w, "error inviting email", 500)
 	}
+	http.ServeFile(w, r, "/static/html/invited.html")
 }
 
 func validEmail(e string) bool {
