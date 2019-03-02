@@ -69,6 +69,11 @@ func main() {
 			return nil
 		},
 
+		FinalizeLogin: func(w http.ResponseWriter, r *http.Request) {
+			logger.Println("finalizing")
+			http.Redirect(w, r, "/", 302)
+		},
+
 		Domain:     env.Get("DOMAIN").Required(fatal),
 		CookieName: "session",
 		Service:    "google",
