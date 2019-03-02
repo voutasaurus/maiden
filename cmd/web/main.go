@@ -94,6 +94,7 @@ type handler struct {
 }
 
 func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
+	h.Log.Println("homepage")
 	_, err := h.Cookie(r)
 	if err != nil {
 		http.ServeFile(w, r, "static/html/preauth.html")
