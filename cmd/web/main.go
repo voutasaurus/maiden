@@ -71,7 +71,7 @@ func main() {
 
 		FinalizeLogin: func(w http.ResponseWriter, r *http.Request) {
 			logger.Println("finalizing")
-			http.Redirect(w, r, "/", 302)
+			http.Redirect(w, r, "/invite", 307)
 		},
 
 		Domain:     env.Get("DOMAIN").Required(fatal),
