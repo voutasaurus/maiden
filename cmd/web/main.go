@@ -99,6 +99,7 @@ func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/html/preauth.html")
 		return
 	}
+	h.Log.Println("homepage - authenticated")
 	// TODO: proper html template (insert id or email somewhere on the page
 	// to signal to the user that they are authenticated)
 	http.ServeFile(w, r, "static/html/invite.html")
