@@ -70,7 +70,6 @@ func main() {
 		},
 
 		FinalizeLogin: func(w http.ResponseWriter, r *http.Request) {
-			logger.Println("finalizing")
 			http.Redirect(w, r, "/invite", 307)
 		},
 
@@ -99,13 +98,11 @@ type handler struct {
 }
 
 func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
-	h.Log.Println("homepage")
 	_, err := h.Cookie(r)
 	if err != nil {
 		http.ServeFile(w, r, "static/html/preauth.html")
 		return
 	}
-	h.Log.Println("homepage - authenticated")
 	// TODO: proper html template (insert id or email somewhere on the page
 	// to signal to the user that they are authenticated)
 	http.ServeFile(w, r, "static/html/invite.html")
