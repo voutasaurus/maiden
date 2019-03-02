@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -95,16 +94,14 @@ type handler struct {
 }
 
 func (h *handler) handleHome(w http.ResponseWriter, r *http.Request) {
-	id, err := h.Cookie(r)
+	_, err := h.Cookie(r)
 	if err != nil {
 		http.ServeFile(w, r, "static/html/preauth.html")
 		return
 	}
 	// TODO: proper html template (insert id or email somewhere on the page
 	// to signal to the user that they are authenticated)
-	w.Write(id)
-	fmt.Fprintln(w, "<br>")
-	fmt.Fprintln(w, `<a href="/invite">invite</a>`)
+	http.ServeFile(w, r, "static/html/invite.html")
 }
 
 func (h *handler) handleStatic(w http.ResponseWriter, r *http.Request) {
