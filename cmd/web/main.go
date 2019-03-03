@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"log"
 	"net/http"
@@ -80,6 +81,12 @@ func main() {
 		Log:        logger,
 	}}
 
+	m := &mailer{
+		// TODO: use other shared key
+		key: stateKey,
+		url: "https://" + h.Domain + "/verify/",
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", h.handleHome)
 	mux.HandleFunc("/login", h.HandleLogin)
@@ -87,7 +94,7 @@ func main() {
 
 	mux.HandleFunc("/static/", h.auth(h.handleStatic))
 	mux.HandleFunc("/invite", h.auth(serveFile("static/html/invite.html")))
-	mux.HandleFunc("/invited", h.auth(h.handleEmailPost))
+	mux.HandleFunc("/invited", h.auth(m.handleEmailPost))
 
 	logger.Println("serving on ", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
@@ -142,14 +149,25 @@ func serveFile(filename string) http.HandlerFunc {
 	}
 }
 
-func (h *handler) handleEmailPost(w http.ResponseWriter, r *http.Request) {
+// Mailer
+
+type mailer struct {
+	key *[32]byte
+	log *log.Logger
+	url string
+}
+
+var encrypt = oauth.EncryptBytes
+var decrypt = oauth.DecryptBytes
+
+func (m *mailer) handleEmailPost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	email := r.Form.Get("email")
 	if !validEmail(email) {
 		http.Error(w, "invalid email address", 400)
 		return
 	}
-	if err := h.invite(email); err != nil {
+	if err := m.invite(email); err != nil {
 		http.Error(w, "error inviting email", 500)
 	}
 	http.ServeFile(w, r, "static/html/invited.html")
@@ -161,11 +179,19 @@ func validEmail(e string) bool {
 	return true
 }
 
-func (h *handler) invite(email string) error {
-	h.Log.Println("inviting email:", email)
-	// TODO: generate temporary token
-	// TODO: generate link
-	// TODO: send email
+func (m *mailer) invite(email string) error {
+	m.log.Println("inviting email:", email)
+	tok, err := encrypt(m.key, []byte(email))
+	if err != nil {
+		return err
+	}
+	link := m.url + base64.URLEncoding.EncodeToString(tok)
+	return m.send(email, link)
 	// TODO: verified email
+}
+
+func (m *mailer) send(email, link string) error {
+	m.log.Printf("sending %q to %q", link, email)
+	// TODO: actually send email
 	return nil
 }
