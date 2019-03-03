@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -96,6 +99,8 @@ func main() {
 	mux.HandleFunc("/invite", h.auth(serveFile("static/html/invite.html")))
 	mux.HandleFunc("/invited", h.auth(m.handleEmailPost))
 
+	mux.HandleFunc("/verify/", m.handleVerify)
+
 	logger.Println("serving on ", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
@@ -157,8 +162,33 @@ type mailer struct {
 	url string
 }
 
-var encrypt = oauth.EncryptBytes
-var decrypt = oauth.DecryptBytes
+var errTokenExpired = errors.New("token expired after 24hrs")
+
+func encrypt(key *[32]byte, msg string) (string, error) {
+	ts := make([]byte, 8)
+	binary.LittleEndian.PutUint64(ts, uint64(time.Now().UnixNano()))
+	b, err := oauth.EncryptBytes(key, append(ts, msg...))
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+func decrypt(key *[32]byte, tok string) (string, error) {
+	tb, err := base64.URLEncoding.DecodeString(tok)
+	if err != nil {
+		return "", err
+	}
+	b, err := oauth.DecryptBytes(key, tb)
+	if err != nil {
+		return "", err
+	}
+	if time.Now().Before(time.Unix(0, int64(binary.LittleEndian.Uint64(b[:8]))).Add(24 * time.Hour)) {
+		return "", errTokenExpired
+	}
+	msg := string(b[8:])
+	return msg, nil
+}
 
 func (m *mailer) handleEmailPost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
@@ -181,17 +211,38 @@ func validEmail(e string) bool {
 
 func (m *mailer) invite(email string) error {
 	m.log.Println("inviting email:", email)
-	tok, err := encrypt(m.key, []byte(email))
+	tok, err := encrypt(m.key, email)
 	if err != nil {
 		return err
 	}
-	link := m.url + base64.URLEncoding.EncodeToString(tok)
-	return m.send(email, link)
+	return m.send(email, m.url+tok)
 	// TODO: verified email
 }
 
 func (m *mailer) send(email, link string) error {
 	m.log.Printf("sending %q to %q", link, email)
 	// TODO: actually send email
+	return nil
+}
+
+func (m *mailer) handleVerify(w http.ResponseWriter, r *http.Request) {
+	tok := r.URL.Path[len("/verify/"):]
+	m.log.Printf("verifying %q", tok)
+	email, err := decrypt(m.key, tok)
+	if err != nil {
+		http.Error(w, err.Error(), 401)
+		return
+	}
+	if err := verify(email); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// TODO: issue cookie
+	// TODO: redirect to password set form
+	fmt.Fprintf(w, "verified: %q", email)
+}
+
+func verify(email string) error {
+	// TODO: mark email as verified in storage?
 	return nil
 }
