@@ -88,6 +88,7 @@ func main() {
 		// TODO: use other shared key
 		key: stateKey,
 		url: "https://" + h.Domain + "/verify/",
+		log: logger,
 	}
 
 	mux := http.NewServeMux()
