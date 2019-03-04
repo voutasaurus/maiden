@@ -217,7 +217,7 @@ func (m *mailer) handleEmailPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := m.invite(email); err != nil {
-		http.Error(w, "error inviting email", 500)
+		http.Error(w, err.Error(), 500)
 	}
 	http.ServeFile(w, r, "static/html/invited.html")
 }
