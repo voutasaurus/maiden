@@ -38,15 +38,12 @@ func (m mail) send() error {
 
 func (m *mailer) send(email, link string) error {
 	m.log.Printf("sending %q to %q", link, email)
-	mail{
+	return mail{
 		mailConn: m.mail,
 		subject:  "Verify your email address",
 		to:       []string{email},
 		msg:      format(link),
 	}.send()
-
-	// TODO: use a verified email sender to avoid spam folders
-	return nil
 }
 
 func format(link string) []byte {
