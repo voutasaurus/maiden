@@ -184,7 +184,8 @@ func decrypt(key *[32]byte, tok string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if time.Now().Before(time.Unix(0, int64(binary.LittleEndian.Uint64(b[:8]))).Add(24 * time.Hour)) {
+	expiry := time.Unix(0, int64(binary.LittleEndian.Uint64(b[:8]))).Add(24 * time.Hour)
+	if expiry.Before(time.Now()) {
 		return "", errTokenExpired
 	}
 	msg := string(b[8:])
