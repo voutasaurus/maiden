@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -50,7 +49,7 @@ func main() {
 
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	h := handler{&oauth.Handler{
+	admin := handler{&oauth.Handler{
 		Config: oauth2.Config{
 			ClientID:     env.Get("OAUTH_CLIENT_ID").Required(fatal),
 			ClientSecret: env.Get("OAUTH_CLIENT_SECRET").Required(fatal),
@@ -87,20 +86,27 @@ func main() {
 	m := &mailer{
 		// TODO: use other shared key
 		key: stateKey,
-		url: "https://" + h.Domain + "/verify/",
+		url: "https://" + admin.Domain + "/verify/",
 		log: logger,
+		user: &oauth.Handler{
+			CookieKey:  stateKey,
+			Domain:     admin.Domain,
+			CookieName: "usession",
+		},
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", h.handleHome)
-	mux.HandleFunc("/login", h.HandleLogin)
-	mux.HandleFunc("/oauth-google-redirect", h.HandleRedirect)
+	mux.HandleFunc("/", admin.handleHome)
+	mux.HandleFunc("/login", admin.HandleLogin)
+	mux.HandleFunc("/oauth-google-redirect", admin.HandleRedirect)
 
-	mux.HandleFunc("/static/", h.auth(h.handleStatic))
-	mux.HandleFunc("/invite", h.auth(serveFile("static/html/invite.html")))
-	mux.HandleFunc("/invited", h.auth(m.handleEmailPost))
+	mux.HandleFunc("/static/", admin.auth(admin.handleStatic))
+	mux.HandleFunc("/invite", admin.auth(serveFile("static/html/invite.html")))
+	mux.HandleFunc("/invited", admin.auth(m.handleEmailPost))
 
 	mux.HandleFunc("/verify/", m.handleVerify)
+	mux.HandleFunc("/password", m.auth(serveFile("static/html/password.html")))
+	mux.HandleFunc("/passworded", m.auth(m.handlePasswordPost))
 
 	logger.Println("serving on ", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
@@ -161,6 +167,9 @@ type mailer struct {
 	key *[32]byte
 	log *log.Logger
 	url string
+
+	// For user authentication after email verification
+	user *oauth.Handler
 }
 
 var errTokenExpired = errors.New("token expired after 24hrs")
@@ -218,12 +227,12 @@ func (m *mailer) invite(email string) error {
 		return err
 	}
 	return m.send(email, m.url+tok)
-	// TODO: verified email
 }
 
 func (m *mailer) send(email, link string) error {
 	m.log.Printf("sending %q to %q", link, email)
 	// TODO: actually send email
+	// TODO: use a verified email sender to avoid spam folders
 	return nil
 }
 
@@ -239,12 +248,46 @@ func (m *mailer) handleVerify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	// TODO: issue cookie
-	// TODO: redirect to password set form
-	fmt.Fprintf(w, "verified: %q", email)
+	m.user.SetCookie(w, []byte(email))
+	http.Redirect(w, r, "/password", 307)
+	m.log.Printf("verified: %q", email)
 }
 
 func verify(email string) error {
 	// TODO: mark email as verified in storage?
+	return nil
+}
+
+func (m *mailer) auth(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := m.user.Cookie(r)
+		if err != nil {
+			http.Error(w, err.Error(), 401)
+			return
+		}
+		r.Header.Add(authHeaderKey, string(id))
+		fn(w, r)
+	}
+}
+
+func (m *mailer) handlePasswordPost(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	username := r.Form.Get("username")
+	password := r.Form.Get("password")
+	confirm := r.Form.Get("confirm")
+	if password != confirm {
+		// TODO: add check client side
+		http.Error(w, "password not equal to confirm", 500)
+		return
+	}
+	if err := m.setUser(username, password); err != nil {
+		http.Error(w, "error setting user", 500)
+	}
+	http.ServeFile(w, r, "static/html/passworded.html")
+}
+
+func (m *mailer) setUser(username, password string) error {
+	m.log.Printf("setting username=%q, password=%v", username, password != "")
+	// TODO: update storage with user details (hash password)
 	return nil
 }
