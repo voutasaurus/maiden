@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/smtp"
 	"strings"
 )
@@ -54,6 +55,7 @@ func format(link string) []byte {
 func connAndSend(addr string, auth smtp.Auth, from string, to []string, msg []byte) error {
 	conn, err := tls.Dial("tcp", addr, nil)
 	if err != nil {
+		log.Println("TLS ERROR ON", addr, ":", err)
 		return err
 	}
 	defer conn.Close()
