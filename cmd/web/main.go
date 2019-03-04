@@ -272,6 +272,7 @@ func (m *mailer) auth(fn http.HandlerFunc) http.HandlerFunc {
 
 func (m *mailer) handlePasswordPost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	email := id(r)
 	username := r.Form.Get("username")
 	password := r.Form.Get("password")
 	confirm := r.Form.Get("confirm")
@@ -280,14 +281,14 @@ func (m *mailer) handlePasswordPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "password not equal to confirm", 500)
 		return
 	}
-	if err := m.setUser(username, password); err != nil {
+	if err := m.setUser(email, username, password); err != nil {
 		http.Error(w, "error setting user", 500)
 	}
 	http.ServeFile(w, r, "static/html/passworded.html")
 }
 
-func (m *mailer) setUser(username, password string) error {
-	m.log.Printf("setting username=%q, password=%v", username, password != "")
+func (m *mailer) setUser(email, username, password string) error {
+	m.log.Printf("%q is setting username=%q, password=%v", email, username, password != "")
 	// TODO: update storage with user details (hash password)
 	return nil
 }
