@@ -93,6 +93,12 @@ func main() {
 			Domain:     admin.Domain,
 			CookieName: "usession",
 		},
+		mail: mailConn{
+			host: addrToHost(env.Get("MAILSERVER_ADDR").Required(fatal)),
+			port: addrToPort(env.Get("MAILSERVER_ADDR").Required(fatal)),
+			from: env.Get("MAILFROM").Required(fatal),
+			pass: env.Get("MAILPASS").Required(fatal),
+		},
 	}
 
 	mux := http.NewServeMux()
@@ -170,6 +176,8 @@ type mailer struct {
 
 	// For user authentication after email verification
 	user *oauth.Handler
+
+	mail mailConn
 }
 
 var errTokenExpired = errors.New("token expired after 24hrs")
@@ -227,13 +235,6 @@ func (m *mailer) invite(email string) error {
 		return err
 	}
 	return m.send(email, m.url+tok)
-}
-
-func (m *mailer) send(email, link string) error {
-	m.log.Printf("sending %q to %q", link, email)
-	// TODO: actually send email
-	// TODO: use a verified email sender to avoid spam folders
-	return nil
 }
 
 func (m *mailer) handleVerify(w http.ResponseWriter, r *http.Request) {
